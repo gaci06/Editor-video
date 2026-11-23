@@ -1,0 +1,6 @@
+.venv/
+.env
+proyectos/
+modelos/
+__pycache__/
+*.pyc

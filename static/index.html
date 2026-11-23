@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de vídeo</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="barra">
+  <div class="logo" id="irInicio" title="Volver a proyectos"><span class="logo-punto"></span>Cortes</div>
+  <input id="nombreProyecto" class="nombre-proyecto oculto" spellcheck="false">
+  <div class="barra-der">
+    <span id="chipIA" class="chip">…</span>
+    <button id="btnAjustes" class="btn fantasma">Ajustes</button>
+  </div>
+</header>
+
+<!-- ============ PANTALLA: LISTA DE PROYECTOS ============ -->
+<main id="pantallaInicio" class="inicio">
+  <div class="inicio-cab">
+    <h1>Tus vídeos</h1>
+    <button id="btnNuevo" class="btn primario grande">+ Nuevo vídeo</button>
+  </div>
+  <div id="listaProyectos" class="lista-proyectos"></div>
+</main>
+
+<!-- ============ PANTALLA: EDITOR ============ -->
+<main id="pantallaEditor" class="editor oculto">
+  <!-- Columna izquierda: material e idea -->
+  <section class="col col-material">
+    <h2>1 · Material</h2>
+    <label class="zona-subida" id="zonaClips">
+      <input type="file" id="inputClips" accept="video/*" multiple hidden>
+      <strong>Arrastra tus vídeos aquí</strong><span>o haz clic para elegirlos</span>
+    </label>
+    <div id="listaClips" class="lista-clips"></div>
+
+    <div class="bloque">
+      <div class="fila-tit"><h3>Canción</h3><span class="ayuda">opcional</span></div>
+      <label class="zona-subida pequena" id="zonaCancion">
+        <input type="file" id="inputCancion" accept="audio/*,video/*" hidden>
+        <span id="textoCancion">Añadir canción (mp3, wav, m4a…)</span>
+      </label>
+      <div id="infoCancion" class="info-cancion oculto">
+        <div class="fila"><span id="nombreCancion" class="truncar"></span><button id="btnQuitarCancion" class="btn mini fantasma">Quitar</button></div>
+        <audio id="audioCancion" controls preload="none"></audio>
+      </div>
+      <details class="letra">
+        <summary>Letra de la canción <span class="ayuda">(mejora mucho los subtítulos)</span></summary>
+        <textarea id="letra" rows="7" placeholder="Pega aquí la letra, una frase por línea"></textarea>
+      </details>
+    </div>
+
+    <h2>2 · Formato</h2>
+    <div class="segmentado" id="formatos"></div>
+    <div class="fila campos">
+      <label>Duración <span class="ayuda">seg · 0 = automática</span>
+        <input type="number" id="duracion" min="0" max="600" step="1"></label>
+      <label>Idioma
+        <select id="idioma"><option value="es">Español</option><option value="en">Inglés</option><option value="pt">Portugués</option><option value="it">Italiano</option><option value="fr">Francés</option><option value="">Detectar</option></select></label>
+    </div>
+    <label class="campo">Precisión de los subtítulos
+      <select id="modeloVoz">
+        <option value="base">Rápida (base)</option>
+        <option value="small">Equilibrada (small)</option>
+        <option value="medium">Alta, más lenta (medium)</option>
+      </select></label>
+
+    <h2>3 · Tu idea</h2>
+    <textarea id="peticion" rows="4" placeholder="Ej.: vídeo de 20 segundos del viaje con el estribillo, cortes rápidos cuando sube la canción, subtítulos grandes en amarillo palabra a palabra"></textarea>
+    <button id="btnCrear" class="btn primario grande ancho">✨ Crear vídeo</button>
+  </section>
+
+  <!-- Columna central: vista previa y montaje -->
+  <section class="col col-centro">
+    <div class="visor">
+      <div id="marcoVideo" class="marco f916">
+        <video id="video" controls playsinline></video>
+        <div id="vacio" class="vacio">Aquí verás tu vídeo.<br>Sube clips y pulsa <b>Crear vídeo</b>.</div>
+      </div>
+    </div>
+    <div id="progreso" class="progreso oculto">
+      <div class="progreso-barra"><div id="progresoRelleno"></div></div>
+      <span id="progresoTexto"></span>
+    </div>
+    <div class="acciones">
+      <button id="btnPreview" class="btn" disabled>▶ Actualizar vista previa</button>
+      <button id="btnExportar" class="btn primario" disabled>⬇ Exportar en calidad final</button>
+    </div>
+    <div id="exportados" class="exportados"></div>
+
+    <div id="explicacion" class="explicacion oculto"></div>
+
+    <div class="pedir">
+      <input id="inputCambio" placeholder="Pide cambios: «más cortes en el estribillo», «empieza en el segundo 45», «subtítulos más pequeños abajo»…" disabled>
+      <button id="btnCambio" class="btn" disabled>Enviar</button>
+    </div>
+
+    <div id="panelMontaje" class="panel-montaje oculto">
+      <div class="fila-tit"><h3>Montaje</h3><span class="ayuda">clic en un trozo para editarlo</span></div>
+      <div id="timeline" class="timeline"></div>
+      <div id="editorSegmento" class="editor-seg oculto"></div>
+      <div class="fila campos">
+        <label id="campoInicioCancion">Empieza la canción en (s)<input type="number" id="inicioCancion" step="0.5" min="0"></label>
+        <label>Duración (s)<input type="number" id="duracionMontaje" step="0.5" min="1"></label>
+        <label id="campoRitmo">Cortes
+          <select id="ritmo">
+            <option value="ia">Como decidió la IA</option>
+            <option value="1">Cada beat (frenético)</option>
+            <option value="2">Cada 2 beats</option>
+            <option value="4">Cada 4 beats</option>
+            <option value="8">Cada 8 beats (tranquilo)</option>
+          </select></label>
+        <label>Encuadre
+          <select id="encuadre"><option value="llenar">Llenar pantalla</option><option value="ajustar">Vídeo entero + fondo</option></select></label>
+      </div>
+      <div class="fila">
+        <button id="btnRemontar" class="btn">↻ Rehacer montaje</button>
+        <button id="btnBarajar" class="btn fantasma">🎲 Otra combinación de trozos</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Columna derecha: subtítulos -->
+  <section class="col col-subs">
+    <div class="fila-tit"><h2>Subtítulos</h2>
+      <label class="interruptor"><input type="checkbox" id="subsActivos" checked><span></span></label></div>
+
+    <div id="muestra" class="muestra"><div id="muestraTexto">ASÍ SE VERÁN</div></div>
+
+    <div class="presets" id="presets"></div>
+    <div class="estilo">
+      <label>Fuente<select id="eFuente"></select></label>
+      <label>Tamaño<input type="range" id="eTamano" min="40" max="180"></label>
+      <label>Posición<select id="ePosicion"><option value="arriba">Arriba</option><option value="centro">Centro</option><option value="abajo">Abajo</option></select></label>
+      <label>Animación<select id="eAnimacion"><option value="pop">Pop</option><option value="fade">Fundido</option><option value="ninguna">Ninguna</option></select></label>
+      <label>Texto<input type="color" id="eColor"></label>
+      <label>Resaltado<input type="color" id="eResaltado"></label>
+      <label>Borde<input type="color" id="eBordeColor"></label>
+      <label>Grosor borde<input type="range" id="eBorde" min="0" max="12" step="0.5"></label>
+      <label>Palabras por bloque<input type="number" id="ePalabras" min="1" max="6"></label>
+      <label class="check"><input type="checkbox" id="eMayus"> MAYÚSCULAS</label>
+    </div>
+
+    <div class="fila-tit"><h3>Texto y tiempos</h3>
+      <div class="fila">
+        <button id="btnAnadirLinea" class="btn mini">+ Línea</button>
+        <button id="btnRegenerar" class="btn mini fantasma" title="Vuelve a transcribir y pierde tus cambios">Regenerar</button>
+      </div>
+    </div>
+    <div id="listaSubs" class="lista-subs"><p class="ayuda">Aparecerán al crear el vídeo.</p></div>
+  </section>
+</main>
+
+<!-- ============ AJUSTES ============ -->
+<dialog id="dlgAjustes">
+  <form method="dialog" class="dlg">
+    <h2>Ajustes</h2>
+    <p>Para que la IA entienda lo que pides necesitas una <b>API key de Claude</b>
+      (se crea en <code>console.anthropic.com</code> y se paga por uso). Sin ella el editor funciona igual,
+      pero con un montaje automático y sin «pedir cambios».</p>
+    <label>API key<input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
+    <label>Modelo<input id="modeloIA" placeholder="claude-sonnet-5-5"></label>
+    <p class="ayuda">Se guarda solo en este ordenador, en el archivo <code>.env</code> de la carpeta del editor.</p>
+    <div class="fila fin">
+      <button value="cancel" class="btn fantasma">Cancelar</button>
+      <button id="btnGuardarAjustes" value="ok" class="btn primario">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="aviso" class="aviso oculto"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
